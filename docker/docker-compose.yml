@@ -11,7 +11,8 @@ services:
       - PERSISTENCE_DRIVER=postgres
       - PORT=3000
     depends_on:
-      - db
+      db:
+        condition: service_healthy
     volumes:
       - ../src:/app/src
 
@@ -23,6 +24,11 @@ services:
       POSTGRES_PASSWORD: postgres
     ports:
       - '5432:5432'
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U postgres']
+      interval: 2s
+      timeout: 5s
+      retries: 10
     volumes:
       - pgdata:/var/lib/postgresql/data
 

@@ -1,0 +1,1 @@
+export { CustomerRepositoryPort } from './CustomerRepositoryPort';

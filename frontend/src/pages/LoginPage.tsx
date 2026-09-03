@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { DEMO_MODE } from '../api/config';
 import { useAuth } from '../hooks/useAuth';
 import { getErrorMessage } from '../api/menu';
@@ -13,11 +13,21 @@ interface LoginPageProps {}
 
 export function LoginPage({}: LoginPageProps) {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const { loginCustomer, loginStaff, registerCustomer } = useAuth();
   const [mode, setMode] = useState<LoginMode>('customer');
   const [customerView, setCustomerView] = useState<CustomerView>('login');
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // When a protected page sent the visitor here (?redirect=...), head back there
+  // after a successful login instead of the default landing page.
+  const redirectParam = searchParams.get('redirect');
+  const redirectTarget = redirectParam && redirectParam.trim() !== '' ? redirectParam : null;
+
+  const afterLogin = () => {
+    navigate(redirectTarget ?? '/');
+  };
 
   // Customer login form state
   const [customerLoginForm, setCustomerLoginForm] = useState({
@@ -51,7 +61,7 @@ export function LoginPage({}: LoginPageProps) {
         nationality: customerLoginForm.nationality,
         password: customerLoginForm.password,
       });
-      navigate('/');
+      afterLogin();
     } catch (err) {
       setError(getErrorMessage(err));
     } finally {
@@ -74,7 +84,7 @@ export function LoginPage({}: LoginPageProps) {
         nationality: customerRegisterForm.nationality,
         password: customerRegisterForm.password,
       });
-      navigate('/');
+      afterLogin();
     } catch (err) {
       setError(getErrorMessage(err));
     } finally {
@@ -91,7 +101,11 @@ export function LoginPage({}: LoginPageProps) {
         username: staffLoginForm.username,
         password: staffLoginForm.password,
       });
-      navigate('/staff');
+      if (redirectTarget) {
+        navigate(redirectTarget);
+      } else {
+        navigate('/staff');
+      }
     } catch (err) {
       setError(getErrorMessage(err));
     } finally {
@@ -108,7 +122,7 @@ export function LoginPage({}: LoginPageProps) {
         nationality: '+57',
         password: 'customer123',
       });
-      navigate('/');
+      afterLogin();
     } catch (err) {
       setError(getErrorMessage(err));
     } finally {
@@ -124,7 +138,11 @@ export function LoginPage({}: LoginPageProps) {
         username: 'admin',
         password: 'admin123',
       });
-      navigate('/staff');
+      if (redirectTarget) {
+        navigate(redirectTarget);
+      } else {
+        navigate('/staff');
+      }
     } catch (err) {
       setError(getErrorMessage(err));
     } finally {
@@ -157,6 +175,15 @@ export function LoginPage({}: LoginPageProps) {
           <h1 className="text-3xl font-bold text-neutral-900">Fast Foodiy</h1>
           <p className="text-neutral-600 mt-1">Sign in to continue</p>
         </div>
+
+        {/* Invitation shown when a protected page (e.g. order confirmation or
+            tracking) redirected here because there is no active session. */}
+        {redirectTarget && (
+          <div className="mb-6 p-4 bg-brand-red/5 border border-brand-red/20 rounded-xl text-brand-red text-sm font-medium animate-fade-in">
+            Inicia sesión o crea una cuenta para ver la confirmación y el
+            seguimiento de tus pedidos.
+          </div>
+        )}
 
         {/* Demo Mode Banner */}
         {DEMO_MODE && (

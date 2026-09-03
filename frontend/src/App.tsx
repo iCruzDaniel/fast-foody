@@ -1,4 +1,4 @@
-import { useNavigate, BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { useNavigate, useLocation, BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { CartProvider, useCart } from './hooks/useCart';
 import { OrdersProvider, useOrders } from './hooks/useOrders';
 import { AuthProvider, useAuth, useIsStaff } from './hooks/useAuth';
@@ -131,6 +131,29 @@ function RequireStaff({ children }: { children: React.ReactNode }) {
   return <>{children}</>;
 }
 
+// Order confirmation and order tracking belong to logged-in customers. When
+// there is no active session, send the visitor to the login page and remember
+// where they came from so login can return them, with an inviting message.
+function RequireCustomerAuth({ children }: { children: React.ReactNode }) {
+  const location = useLocation();
+  const { status } = useAuth();
+
+  if (status === 'loading') {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-neutral-100">
+        <div className="w-10 h-10 border-4 border-brand-red border-t-transparent rounded-full animate-spin" />
+      </div>
+    );
+  }
+
+  if (status !== 'authenticated') {
+    const redirect = encodeURIComponent(location.pathname + location.search);
+    return <Navigate to={`/login?redirect=${redirect}`} replace />;
+  }
+
+  return <>{children}</>;
+}
+
 function AppRoutes() {
   return (
     <Routes>
@@ -138,8 +161,8 @@ function AppRoutes() {
       <Route path="/" element={<CustomerLayout currentPage="menu"><MenuRoute /></CustomerLayout>} />
       <Route path="/cart" element={<CustomerLayout currentPage="cart"><CartRoute /></CustomerLayout>} />
       <Route path="/checkout" element={<CheckoutRoute />} />
-      <Route path="/confirmation" element={<ConfirmationRoute />} />
-      <Route path="/orders" element={<OrdersRoute />} />
+      <Route path="/confirmation" element={<RequireCustomerAuth><ConfirmationRoute /></RequireCustomerAuth>} />
+      <Route path="/orders" element={<RequireCustomerAuth><OrdersRoute /></RequireCustomerAuth>} />
       <Route
         path="/staff"
         element={

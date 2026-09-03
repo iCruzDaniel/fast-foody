@@ -6,10 +6,10 @@
  * @application/*) that Vercel's node runtime cannot resolve, so esbuild must
  * bundle the app first. The bundle is emitted into the Build Output API layout
  * (.vercel/output/functions/api.func/) with a .vc-config.json whose
- * `handler: "index.handler"` + `shouldAddHelpers: true` makes Vercel bridge the
- * Lambda event into real Node req/res and invoke the named `handler` export
- * (from src/vercel-entry.ts) as a (req, res) function — the supported path for
- * Express apps. Routing in config.json sends every non-static
+ * `handler: "index.js"` + `shouldAddHelpers: true` makes Vercel bridge the
+ * Lambda event into real Node req/res and invoke the module's default export
+ * (the Express app from src/vercel-entry.ts) as a (req, res) function — the
+ * supported path for Express apps. Routing in config.json sends every non-static
  * path to the /api function while still serving static assets (handle:
  * filesystem).
  *
@@ -44,19 +44,19 @@ function writeFunction() {
   fs.mkdirSync(FUNC_DIR, { recursive: true })
   // Copy the CJS bundle into the function directory so it is included in the
   // serverless function payload. Named index.js so the .vc-config.json handler
-  // ("index.handler") resolves to the named `handler` export (the Express app
-  // wrapper emitted by esbuild from src/vercel-entry.ts).
+  // ("index.js") resolves to the module's default export (the Express app
+  // emitted by esbuild from src/vercel-entry.ts).
   fs.copyFileSync(BUNDLE_SOURCE, path.join(FUNC_DIR, HANDLER_FILE))
 
-  // Node.js serverless function config. `handler: "index.handler"` +
-  // launcherType Nodejs + shouldAddHelpers true bridges the Lambda event into
-  // real Node req/res and invokes the named handler as a (req, res) function.
+  // Node.js serverless function config. `handler: "index.js"` + launcherType
+  // Nodejs + shouldAddHelpers true bridges the Lambda event into real Node
+  // req/res and invokes the default export as a (req, res) function.
   fs.writeFileSync(
     path.join(FUNC_DIR, '.vc-config.json'),
     JSON.stringify(
       {
         runtime: 'nodejs20.x',
-        handler: 'index.handler',
+        handler: 'index.js',
         launcherType: 'Nodejs',
         shouldAddHelpers: true,
         shouldAddSourcemapSupport: false,

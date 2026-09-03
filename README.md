@@ -6,8 +6,13 @@
   <img src=".github/images/fast-foody.jpg" alt="Fast Foodiy logo" width="120" />
   <h1>🍔 Fast Foodiy</h1>
   <p>
-    <b>REST API + App web</b> para gestionar el ciclo de vida de pedidos de un restaurante de comida rápida:
+    <b>Proyecto fullstack</b> de gestión de pedidos para un restaurante de comida rápida:
     catálogo de productos y órdenes de clientes, desde su creación hasta su entrega o cancelación.
+  </p>
+  <p>
+    Empezó como una <b>REST API</b> (backend en <b>Vercel</b> con persistencia <b>Upstash Redis</b>)
+    y evolucionó a una <b>app web completa</b>: frontend en <b>React + Vite</b> (GitHub Pages),
+    autenticación por roles (cliente / staff / admin) y <b>despliegue automático</b> con CI/CD.
   </p>
 
   <!-- Shields -->
@@ -40,7 +45,10 @@
 
 ## 🚀 Prueba en vivo
 
-| | Enlace |
+Todo el stack está desplegado y funcionando con **CI/CD automático** (cada push a
+`main` redespiega frontend y backend):
+
+| Capa | Enlace |
 |---|---|
 | 🖥️ **App web (frontend)** | **https://icruzdaniel.github.io/fast-foody/** |
 | ⚙️ **API REST (backend)** | **https://fast-foody.vercel.app/api/v1** |
@@ -63,15 +71,35 @@
 
 ## Stack
 
+Proyecto **fullstack**: API backend + app web frontend + despliegue automático.
+
+**Backend** (REST API — el núcleo original):
+
 - **Runtime:** Node.js 20+ / TypeScript (strict)
 - **Framework:** Express
 - **ORM:** Prisma (PostgreSQL)
-- **Persistencia alternativa:** Upstash Redis (serverless)
+- **Persistencia alternativa:** Upstash Redis (serverless, usada en el deploy de Vercel)
 - **Autenticación:** JWT (HS256) en cookie httpOnly + bcryptjs
 - **Validación:** Zod
 - **Testing:** Vitest
-- **Frontend:** React 19 + Vite + Tailwind CSS v4
-- **Infra:** Docker + docker-compose
+
+**Frontend** (app web):
+
+- **React 19 + Vite + Tailwind CSS v4**
+- **Despliegue:** GitHub Pages (`https://icruzdaniel.github.io/fast-foody/`)
+
+**Infra / CI-CD:**
+
+- **Vercel** (backend API serverless con Build Output API + esbuild)
+- **GitHub Actions** (workflow para publicar el frontend en Pages)
+- **Docker + docker-compose** (dev/PostgreSQL)
+
+> **De API a app completa.** El proyecto empezó como una REST API pura (dominio
+> hexagonal + use cases + adaptadores de persistencia). Con el tiempo se le sumó
+> un **frontend en React**, autenticación por roles, y **despliegue automático**
+> (Vercel para la API + GitHub Pages para el frontend). Hoy es un producto
+> fullstack, pero la arquitectura hexagonal original se mantiene intacta: la API
+> sigue siendo el corazón del sistema y el frontend consume sus endpoints.
 
 ## Arquitectura: Hexagonal (Ports & Adapters) + DDD
 

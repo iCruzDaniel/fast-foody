@@ -75,7 +75,7 @@ function writeConfig() {
     version: 3,
     routes: [
       { handle: 'filesystem' },
-      { src: '/api/(.*)', dest: '/api/$1' },
+      { src: '/api/(.*)', dest: '/api' },
     ],
   }
   fs.writeFileSync(path.join(OUTPUT_DIR, 'config.json'), JSON.stringify(config, null, 2))

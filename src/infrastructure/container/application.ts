@@ -207,7 +207,12 @@ export function buildApplication(repos: ApplicationRepositories): Application {
     app.use('/api/v1/auth', createAuthRoutes(authController, jwtSessionService))
   }
   app.use(errorHandler)
-  app.use((req, res) => res.status(404).json({ error: 'NOT_FOUND', message: 'Route not found' }))
+  app.use((req, res) => {
+    if (process.env['NODE_ENV'] !== 'production') {
+      console.log(`[fast-foody] unmatched ${req.method} ${req.url}`)
+    }
+    res.status(404).json({ error: 'NOT_FOUND', message: 'Route not found' })
+  })
 
   return {
     app,

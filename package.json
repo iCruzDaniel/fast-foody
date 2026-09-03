@@ -6,7 +6,7 @@
   "scripts": {
     "dev": "tsx src/server.ts",
     "build": "tsc --noEmit",
-    "build:vercel": "esbuild src/app.ts --bundle --platform=node --format=cjs --target=node20 --outfile=dist/index.cjs --alias:@domain=./src/domain --alias:@shared=./src/shared --alias:@application=./src/application --external:@prisma/client && node scripts/create-vercel-output.js",
+    "build:vercel": "esbuild src/vercel-entry.ts --bundle --platform=node --format=cjs --target=node20 --outfile=dist/index.cjs --alias:@domain=./src/domain --alias:@shared=./src/shared --alias:@application=./src/application --external:@prisma/client && node scripts/create-vercel-output.js",
     "start": "esbuild src/server.ts --bundle --platform=node --format=cjs --target=node20 --outfile=dist/server.cjs --alias:@domain=./src/domain --alias:@shared=./src/shared --alias:@application=./src/application --external:@prisma/client && node dist/server.cjs",
     "test": "vitest run",
     "test:watch": "vitest",
@@ -19,7 +19,6 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "@prisma/client": "^5.18.0",
     "@upstash/redis": "^1.38.3",
     "bcryptjs": "^3.0.3",
     "cookie-parser": "^1.4.7",
@@ -31,6 +30,7 @@
     "zod": "^3.23.8"
   },
   "devDependencies": {
+    "@prisma/client": "^5.18.0",
     "@types/cookie-parser": "^1.4.10",
     "@types/cors": "^2.8.19",
     "@types/express": "^4.17.21",

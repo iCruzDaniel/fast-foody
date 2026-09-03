@@ -1,7 +1,8 @@
 import { createVercelContainer } from './infrastructure/container/container.vercel'
 
-// Vercel entrypoint: uses the postgres-free container so the deployed bundle
-// never references the Prisma adapters or @prisma/client.
-export const app = createVercelContainer().app
+const app = createVercelContainer().app
 
-export default app
+// `export = app` emits `module.exports = app`, the exact (req, res) handler
+// shape Vercel's Nodejs launcher invokes directly (a default export caused
+// NO_RESPONSE_FROM_FUNCTION). Keep it as-is.
+export = app

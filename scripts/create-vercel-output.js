@@ -6,8 +6,9 @@
  * @application/*) that Vercel's node runtime cannot resolve, so esbuild must
  * bundle the app first. The bundle is emitted into the Build Output API layout
  * (.vercel/output/functions/api.func/) with a .vc-config.json whose
- * `handler: "index.default"` makes Vercel auto-wrap the default-export Express
- * app as a serverless function. Routing in config.json sends every non-static
+ * `handler: "index"` makes Vercel invoke the bundle's `module.exports` —
+ * emitted by esbuild from `export = app` in src/vercel-entry.ts — directly as a
+ * (req, res) Node handler. Routing in config.json sends every non-static
  * path to the /api function while still serving static assets (handle:
  * filesystem).
  *
@@ -42,17 +43,18 @@ function writeFunction() {
   fs.mkdirSync(FUNC_DIR, { recursive: true })
   // Copy the CJS bundle into the function directory so it is included in the
   // serverless function payload. Named index.js so the .vc-config.json handler
-  // ("index.default") resolves to the default-exported Express app.
+  // ("index") resolves to the bundle's `module.exports`, which is the Express
+  // app itself (emitted by esbuild from `export = app`).
   fs.copyFileSync(BUNDLE_SOURCE, path.join(FUNC_DIR, HANDLER_FILE))
 
-  // Node.js serverless function config. `handler: "index.default"` +
-  // launcherType Nodejs makes Vercel wrap the default-exported Express app.
+  // Node.js serverless function config. `handler: "index"` + launcherType Nodejs
+  // makes Vercel invoke the module's export directly as a (req, res) handler.
   fs.writeFileSync(
     path.join(FUNC_DIR, '.vc-config.json'),
     JSON.stringify(
       {
         runtime: 'nodejs20.x',
-        handler: 'index.default',
+        handler: 'index',
         launcherType: 'Nodejs',
         shouldAddHelpers: false,
         shouldAddSourcemapSupport: false,

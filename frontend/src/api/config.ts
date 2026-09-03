@@ -25,4 +25,4 @@ export const DEMO_MODE = import.meta.env.VITE_DEMO_MODE === 'true';
  * If you re-seed a fresh store, update this constant to one of the customer
  * ids printed by the seed script.
  */
-export const WALK_IN_CUSTOMER_ID = '4624cdb0-e151-45bb-a39f-07971a1243ab';
+export const WALK_IN_CUSTOMER_ID = '3cbb20e1-3429-4e4f-ab31-d3c48ddb173e';

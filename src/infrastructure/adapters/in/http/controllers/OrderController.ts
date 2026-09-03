@@ -32,7 +32,7 @@ export class OrderController {
       input.status = status as OrderStatus
     }
     const orders = await this.listOrders.execute(input)
-    res.json(orders.map(this.toOrderResponse))
+    res.json(orders.map((order) => this.toOrderResponse(order)))
   }
 
   async getById(req: Request, res: Response): Promise<void> {
@@ -76,7 +76,7 @@ export class OrderController {
     return {
       id: order.id.value,
       customerId: order.customerId.value,
-      items: order.getItems().map(this.toOrderItemResponse),
+      items: order.getItems().map((item) => this.toOrderItemResponse(item)),
       status: order.status,
       createdAt: order.createdAt.toISOString(),
       updatedAt: order.updatedAt.toISOString(),

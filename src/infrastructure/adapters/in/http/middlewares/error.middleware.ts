@@ -5,7 +5,9 @@ import { ZodError } from 'zod'
 export function errorHandler(err: Error, req: Request, res: Response, next: NextFunction): void {
   if (err instanceof DomainError) {
     const statusCode = err.code.includes('NOT_FOUND') ? 404 :
-                       err.code.includes('TRANSITION') ? 409 : 400
+                       err.code.includes('TRANSITION') ? 409 :
+                       err.code === 'UNAUTHENTICATED' ? 401 :
+                       err.code === 'FORBIDDEN' ? 403 : 400
     res.status(statusCode).json({
       error: err.code,
       message: err.message,

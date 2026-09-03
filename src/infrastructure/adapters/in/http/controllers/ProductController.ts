@@ -26,6 +26,7 @@ export class ProductController {
       currency: parsed.currency,
       category: parsed.category,
       available: parsed.available,
+      ...(parsed.imageUrl !== undefined ? { imageUrl: parsed.imageUrl } : {}),
     }
     const product = await this.createProduct.execute(input)
     res.status(201).json(this.toProductResponse(product))
@@ -81,6 +82,7 @@ export class ProductController {
       },
       category: product.category,
       available: product.available,
+      imageUrl: product.imageUrl,
     }
   }
 }

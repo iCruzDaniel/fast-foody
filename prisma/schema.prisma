@@ -52,6 +52,7 @@ model Product {
   currency    String          @default("COP")
   category    ProductCategory
   available   Boolean         @default(true)
+  imageUrl    String          @default("")
 }
 
 model Customer {

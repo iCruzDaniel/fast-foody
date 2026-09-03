@@ -9,6 +9,7 @@ interface ProductProps {
   price: Money;
   category: ProductCategoryType;
   available: boolean;
+  imageUrl?: string;
 }
 
 export class Product extends Entity<ProductId> {
@@ -17,6 +18,7 @@ export class Product extends Entity<ProductId> {
   private readonly _price: Money;
   private readonly _category: ProductCategoryType;
   private readonly _available: boolean;
+  private readonly _imageUrl: string;
 
   private constructor(props: ProductProps) {
     super(props.id);
@@ -25,6 +27,7 @@ export class Product extends Entity<ProductId> {
     this._price = props.price;
     this._category = props.category;
     this._available = props.available;
+    this._imageUrl = props.imageUrl ?? '';
   }
 
   get name(): string {
@@ -47,13 +50,18 @@ export class Product extends Entity<ProductId> {
     return this._available;
   }
 
+  get imageUrl(): string {
+    return this._imageUrl;
+  }
+
   static create(
     id: ProductId,
     name: string,
     description: string,
     price: Money,
     category: ProductCategoryType,
-    available: boolean = true
+    available: boolean = true,
+    imageUrl: string = ''
   ): Product {
     if (!name || name.trim() === '') {
       throw new DomainError('INVALID_PRODUCT_NAME', 'Product name cannot be empty');
@@ -75,6 +83,7 @@ export class Product extends Entity<ProductId> {
       price,
       category,
       available,
+      imageUrl,
     });
   }
 
@@ -89,6 +98,7 @@ export class Product extends Entity<ProductId> {
       price: newPrice,
       category: this._category,
       available: this._available,
+      imageUrl: this._imageUrl,
     });
   }
 
@@ -100,6 +110,7 @@ export class Product extends Entity<ProductId> {
       price: this._price,
       category: this._category,
       available: false,
+      imageUrl: this._imageUrl,
     });
   }
 
@@ -111,6 +122,7 @@ export class Product extends Entity<ProductId> {
       price: this._price,
       category: this._category,
       available: true,
+      imageUrl: this._imageUrl,
     });
   }
 
@@ -128,6 +140,7 @@ export class Product extends Entity<ProductId> {
       price: this._price,
       category: this._category,
       available: this._available,
+      imageUrl: this._imageUrl,
     });
   }
 
@@ -137,7 +150,8 @@ export class Product extends Entity<ProductId> {
     description: string,
     price: Money,
     category: ProductCategoryType,
-    available: boolean
+    available: boolean,
+    imageUrl: string = ''
   ): Product {
     return new Product({
       id,
@@ -146,6 +160,7 @@ export class Product extends Entity<ProductId> {
       price,
       category,
       available,
+      imageUrl,
     });
   }
 }

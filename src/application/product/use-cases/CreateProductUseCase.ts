@@ -9,6 +9,7 @@ export interface CreateProductInput {
   currency?: string;
   category: ProductCategoryType;
   available?: boolean;
+  imageUrl?: string;
 }
 
 export class CreateProductUseCase {
@@ -28,7 +29,8 @@ export class CreateProductUseCase {
       input.description ?? '',
       price,
       input.category,
-      input.available ?? true
+      input.available ?? true,
+      input.imageUrl ?? ''
     );
 
     await this.productRepository.save(product);

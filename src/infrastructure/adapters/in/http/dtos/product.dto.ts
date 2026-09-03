@@ -9,6 +9,7 @@ export const CreateProductSchema = z.object({
   currency: z.string().default('COP'),
   category: ProductCategorySchema,
   available: z.boolean().default(true),
+  imageUrl: z.string().url().optional(),
 })
 
 export const UpdateProductPriceSchema = z.object({

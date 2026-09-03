@@ -46,7 +46,8 @@ export class PrismaProductRepository implements ProductRepositoryPort {
       prismaProduct.description,
       Money.create(prismaProduct.price, prismaProduct.currency),
       prismaProduct.category as ProductCategoryType,
-      prismaProduct.available
+      prismaProduct.available,
+      prismaProduct.imageUrl
     );
   }
 
@@ -59,6 +60,7 @@ export class PrismaProductRepository implements ProductRepositoryPort {
       currency: product.price.currency,
       category: product.category,
       available: product.available,
+      imageUrl: product.imageUrl,
     };
   }
 }

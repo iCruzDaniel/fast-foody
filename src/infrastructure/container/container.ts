@@ -10,10 +10,32 @@ import { InMemoryProductRepository } from '../adapters/out/persistence/in-memory
 import { InMemoryCustomerRepository } from '../adapters/out/persistence/in-memory/InMemoryCustomerRepository'
 import { ConsoleEventPublisher } from '../adapters/out/events/ConsoleEventPublisher'
 
-// Postgres adapters (only imported when needed)
-import { PrismaOrderRepository } from '../adapters/out/persistence/postgres/PrismaOrderRepository'
-import { PrismaProductRepository } from '../adapters/out/persistence/postgres/PrismaProductRepository'
-import { PrismaCustomerRepository } from '../adapters/out/persistence/postgres/PrismaCustomerRepository'
+// Postgres adapters: type-only import (no runtime require) + a lazy loader so
+// @prisma/client is never pulled in for the memory/upstash drivers, which are
+// the defaults on Vercel. Prisma's generated client is only resolved when the
+// postgres driver branch actually runs, avoiding a module-load crash there.
+import type { PrismaOrderRepository } from '../adapters/out/persistence/postgres/PrismaOrderRepository'
+import type { PrismaProductRepository } from '../adapters/out/persistence/postgres/PrismaProductRepository'
+import type { PrismaCustomerRepository } from '../adapters/out/persistence/postgres/PrismaCustomerRepository'
+
+interface PrismaRepos {
+  orderRepo: PrismaOrderRepository
+  productRepo: PrismaProductRepository
+  customerRepo: PrismaCustomerRepository
+}
+
+function createPrismaRepos(): PrismaRepos {
+  // require() runs only when the postgres driver is active; esbuild still
+  // bundles the required modules (and keeps @prisma/client external).
+  const { PrismaOrderRepository: OrderRepo } = require('../adapters/out/persistence/postgres/PrismaOrderRepository')
+  const { PrismaProductRepository: ProductRepo } = require('../adapters/out/persistence/postgres/PrismaProductRepository')
+  const { PrismaCustomerRepository: CustomerRepo } = require('../adapters/out/persistence/postgres/PrismaCustomerRepository')
+  return {
+    orderRepo: new OrderRepo(),
+    productRepo: new ProductRepo(),
+    customerRepo: new CustomerRepo(),
+  }
+}
 
 // Upstash adapters
 import { UpstashOrderRepository } from '../adapters/out/persistence/upstash/UpstashOrderRepository'
@@ -94,9 +116,10 @@ export function createContainer(): Container {
   let customerRepo: InMemoryCustomerRepository | PrismaCustomerRepository | UpstashCustomerRepository
 
   if (config.persistenceDriver === 'postgres') {
-    orderRepo = new PrismaOrderRepository()
-    productRepo = new PrismaProductRepository()
-    customerRepo = new PrismaCustomerRepository()
+    const prisma = createPrismaRepos()
+    orderRepo = prisma.orderRepo
+    productRepo = prisma.productRepo
+    customerRepo = prisma.customerRepo
   } else if (redis !== null) {
     orderRepo = new UpstashOrderRepository(redis)
     productRepo = new UpstashProductRepository(redis)

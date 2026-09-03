@@ -1,6 +1,65 @@
-# Fast Foodiy API (re-subido)
+<p align="center">
+  <img src=".github/images/fast-foody-banner.webp" alt="Fast Foodiy banner" width="100%" />
+</p>
 
-REST API para gestionar el ciclo de vida de pedidos de un restaurante de comida rápida: catálogo de productos y órdenes de clientes, desde su creación hasta su entrega o cancelación.
+<div align="center">
+  <img src=".github/images/fast-foody.jpg" alt="Fast Foodiy logo" width="120" />
+  <h1>🍔 Fast Foodiy</h1>
+  <p>
+    <b>REST API + App web</b> para gestionar el ciclo de vida de pedidos de un restaurante de comida rápida:
+    catálogo de productos y órdenes de clientes, desde su creación hasta su entrega o cancelación.
+  </p>
+
+  <!-- Shields -->
+  <p>
+    <a href="https://github.com/iCruzDaniel/fast-foody"><img alt="TypeScript" src="https://img.shields.io/badge/TypeScript-strict-3178C6?logo=typescript&logoColor=white"/></a>
+    <a href="https://github.com/iCruzDaniel/fast-foody"><img alt="Node" src="https://img.shields.io/badge/Node.js-20+-339933?logo=nodedotjs&logoColor=white"/></a>
+    <a href="https://github.com/iCruzDaniel/fast-foody"><img alt="Express" src="https://img.shields.io/badge/Express-4-000000?logo=express&logoColor=white"/></a>
+    <a href="https://github.com/iCruzDaniel/fast-foody"><img alt="Prisma" src="https://img.shields.io/badge/Prisma-2D3748?logo=prisma&logoColor=white"/></a>
+    <a href="https://github.com/iCruzDaniel/fast-foody"><img alt="PostgreSQL" src="https://img.shields.io/badge/PostgreSQL-336791?logo=postgresql&logoColor=white"/></a>
+    <a href="https://github.com/iCruzDaniel/fast-foody"><img alt="Upstash Redis" src="https://img.shields.io/badge/Upstash%20Redis-00E9A3?logo=upstash&logoColor=white"/></a>
+    <a href="https://github.com/iCruzDaniel/fast-foody"><img alt="Zod" src="https://img.shields.io/badge/Zod-3E74F3?logo=zod&logoColor=white"/></a>
+    <a href="https://github.com/iCruzDaniel/fast-foody"><img alt="React" src="https://img.shields.io/badge/React-19-61DAFB?logo=react&logoColor=white"/></a>
+    <a href="https://github.com/iCruzDaniel/fast-foody"><img alt="Vite" src="https://img.shields.io/badge/Vite-646CFF?logo=vite&logoColor=white"/></a>
+    <a href="https://github.com/iCruzDaniel/fast-foody"><img alt="Tailwind" src="https://img.shields.io/badge/Tailwind%20CSS-38BDF8?logo=tailwindcss&logoColor=white"/></a>
+    <a href="https://github.com/iCruzDaniel/fast-foody"><img alt="Vitest" src="https://img.shields.io/badge/Vitest-6E9F18?logo=vitest&logoColor=white"/></a>
+    <a href="https://github.com/iCruzDaniel/fast-foody"><img alt="Docker" src="https://img.shields.io/badge/Docker-2496ED?logo=docker&logoColor=white"/></a>
+    <a href="https://github.com/iCruzDaniel/fast-foody"><img alt="Vercel" src="https://img.shields.io/badge/Vercel-000000?logo=vercel&logoColor=white"/></a>
+    <a href="https://github.com/iCruzDaniel/fast-foody"><img alt="GitHub Pages" src="https://img.shields.io/badge/GitHub%20Pages-222222?logo=github&logoColor=white"/></a>
+  </p>
+
+  <!-- Estado -->
+  <p>
+    <a href="https://github.com/iCruzDaniel/fast-foody/actions"><img alt="Tests" src="https://img.shields.io/github/actions/workflow/status/iCruzDaniel/fast-foody/deploy-gh-pages.yml?label=gh-pages"/></a>
+    <a href="https://github.com/iCruzDaniel/fast-foody"><img alt="Tests: 114" src="https://img.shields.io/badge/tests-114%20passing-brightgreen"/></a>
+    <a href="https://github.com/iCruzDaniel/fast-foody/blob/main/LICENSE"><img alt="License" src="https://img.shields.io/github/license/iCruzDaniel/fast-foody"/></a>
+  </p>
+</div>
+
+---
+
+## 🚀 Prueba en vivo
+
+| | Enlace |
+|---|---|
+| 🖥️ **App web (frontend)** | **https://icruzdaniel.github.io/fast-foody/** |
+| ⚙️ **API REST (backend)** | **https://fast-foody.vercel.app/api/v1** |
+
+> **Demo lista para probar:** entra a la app y usa los botones **Autologin Cliente** /
+> **Autologin Staff Admin** en la página de Login (seed de demo con datos + usuarios ya
+> cargados). O prueba la API directamente:
+>
+> ```bash
+> # Catálogo de productos
+> curl https://fast-foody.vercel.app/api/v1/products
+>
+> # Login de staff demo (admin / admin123)
+> curl -X POST https://fast-foody.vercel.app/api/v1/auth/login/staff \
+>   -H "Content-Type: application/json" \
+>   -d '{"username":"admin","password":"admin123"}'
+> ```
+
+---
 
 ## Stack
 
@@ -208,25 +267,25 @@ El backend Express se empaqueta para Vercel (serverless) con `esbuild`
 
 ### Cómo funciona el build
 
-`build:vercel` bundlea `src/app.ts` (que exporta el handler Express como
-`export default app`) con **esbuild**, **resolviendo los aliases `@domain/*`,
-`@shared/*` y `@application/*`** que el `tsc` no reescribe en el output.
-`@prisma/client` queda **external** (lo instala Vercel vía `node_modules`;
-solo se invoca si eliges el driver `postgres`).
+`build:vercel` bundlea `src/vercel-entry.ts` con **esbuild**, **resolviendo los
+aliases `@domain/*`, `@shared/*` y `@application/*`** que el `tsc` no reescribe
+en el output. `@prisma/client` queda **external** (lo instala Vercel vía
+`node_modules`; solo se invoca si eliges el driver `postgres`).
 
 Luego `scripts/create-vercel-output.js` ensambla el **Build Output API** de
 Vercel en `.vercel/output/`:
 
-- `functions/api.func/index.js` — el bundle CJS con `export default app`.
-- `functions/api.func/.vc-config.json` — `handler: "index.default"` +
-  `launcherType: Nodejs`, lo que hace que Vercel envuelva el app Express como
-  función serverless.
+- `functions/api.func/index.js` — el bundle CJS; `src/vercel-entry.ts` usa
+  `export = app`, así el `module.exports` **ES** el app Express.
+- `functions/api.func/.vc-config.json` — `handler: "index.js"` +
+  `launcherType: Nodejs` + `shouldAddHelpers: true`, que hace que Vercel
+  envuelva el app Express como función serverless.
 - `config.json` — `version: 3`, con `handle: filesystem` (sirve estáticos
   primero) y `{ "src": "/api/(.*)", "dest": "/api" }`, que envía todas las
   rutas `/api/*` a la función. Vercel conserva la ruta original, así el app
   Express interno (rutas `/api/v1/*`) matchea directamente.
 
-- `src/app.ts` construye el container y expone el app (`export default app`).
+- `src/vercel-entry.ts` construye el container y expone el app (`export = app`).
 - `src/server.ts` usa el mismo app con `app.listen` (dev local: `npm run dev`).
 - `vercel.json`: `framework: null`, `buildCommand: npm run build:vercel` y
   `outputDirectory: .vercel/output` (necesario para que Vercel descubra el
@@ -276,6 +335,41 @@ cuando la base Upstash esté vacía.
 > serverless. Si usas el driver `postgres`, Prisma necesita `prisma migrate
 > deploy` y un pool para serverless; el driver recomendado para este deploy es
 > `upstash`.
+
+### Decisiones técnicas (despliegue)
+
+Resumen de las decisiones que hicieron funcionar este deploy en producción:
+
+- **Build Output API en vez de `builds`/`routes` de `vercel.json`.** El `src`
+  de un `build` se evalúa contra el snapshot del repo *antes* de correr el
+  build, así que un bundle gitignored (`dist/`) nunca registraba la función
+  (devuelve 404 en todas las rutas). El Build Output API registra la función
+  *después* del `buildCommand`, escaneando `.vercel/output/functions/**`, lo
+  que evita esa carrera y no exige commitear el bundle.
+- **El handler de la función tiene que ser el nombre del archivo, no
+  `archivo.export`.** Para un app Express con `launcherType: Nodejs`, el
+  `.vc-config.json` correcto es `handler: "index.js"` (solo nombre de archivo)
+  y `shouldAddHelpers: true`. Combinado con `export = app` en el bundle
+  (`src/vercel-entry.ts` → `module.exports` es el app Express), Vercel envuelve
+  el app como función serverless sin `FUNCTION_INVOCATION_FAILED`.
+- **`esbuild` resuelve los aliases de TS** (`@domain/*`, `@shared/*`,
+  `@application/*`) que `tsc` no reescribe en el output — es la razón de
+  pre-bundear en lugar de compilar con `tsc` a secas.
+- **Upstash como driver de persistencia serverless + sesiones.** No requiere
+  pool ni `migrate deploy` (a diferencia de `postgres`), es HTTP-based y
+  perfecto para Vercel. La autenticación (cookie `ff_session`) solo se monta
+  con este driver.
+- **El seed debe correrse tras conectar Upstash.** La base demo venía vacía, lo
+  que hacía fallar el autologin (`UNAUTHENTICATED`/`INVALID_CREDENTIALS`) y
+  devolver catálogo vacío. `PERSISTENCE_DRIVER=upstash DEMO_MODE=true npm run seed`
+  carga productos, pedidos y los usuarios demo.
+- **CORS credentialed con el origen correcto.** `CORS_ORIGIN` debe apuntar al
+  **origen del frontend** (`https://icruzdaniel.github.io`), NO a la URL de la
+  API, porque el frontend usa `fetch` con `credentials: 'include'` (cookie
+  `ff_session`) y los orígenes son distintos.
+- **Login gate en el frontend.** `/confirmation` y `/orders` requieren sesión de
+  cliente (`RequireCustomerAuth`); la página de Login lee `?redirect=` y vuelve
+  a la ruta original tras autenticarse. El `/` (menú) queda público a propósito.
 
 ## Comandos
 

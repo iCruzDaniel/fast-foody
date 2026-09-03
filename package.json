@@ -6,7 +6,7 @@
   "scripts": {
     "dev": "tsx src/server.ts",
     "build": "tsc --noEmit",
-    "build:vercel": "esbuild src/app.ts --bundle --platform=node --format=cjs --target=node20 --outfile=dist/index.cjs --alias:@domain=./src/domain --alias:@shared=./src/shared --alias:@application=./src/application --external:@prisma/client",
+    "build:vercel": "esbuild src/app.ts --bundle --platform=node --format=cjs --target=node20 --outfile=dist/index.cjs --alias:@domain=./src/domain --alias:@shared=./src/shared --alias:@application=./src/application --external:@prisma/client && node scripts/create-vercel-output.js",
     "start": "esbuild src/server.ts --bundle --platform=node --format=cjs --target=node20 --outfile=dist/server.cjs --alias:@domain=./src/domain --alias:@shared=./src/shared --alias:@application=./src/application --external:@prisma/client && node dist/server.cjs",
     "test": "vitest run",
     "test:watch": "vitest",

@@ -209,17 +209,35 @@ El backend Express se empaqueta para Vercel (serverless) con `esbuild`
 ### Cómo funciona el build
 
 `build:vercel` bundlea `src/app.ts` (que exporta el handler Express como
-`export default app`) a `dist/index.cjs`, **resolviendo los aliases
-`@domain/*`, `@shared/*` y `@application/*`** que el `tsc` no reescribe en el
-output. `@prisma/client` queda **external** (lo instala Vercel vía
-`node_modules`; solo se invoca si eliges el driver `postgres`).
+`export default app`) con **esbuild**, **resolviendo los aliases `@domain/*`,
+`@shared/*` y `@application/*`** que el `tsc` no reescribe en el output.
+`@prisma/client` queda **external** (lo instala Vercel vía `node_modules`;
+solo se invoca si eliges el driver `postgres`).
+
+Luego `scripts/create-vercel-output.js` ensambla el **Build Output API** de
+Vercel en `.vercel/output/`:
+
+- `functions/api.func/index.js` — el bundle CJS con `export default app`.
+- `functions/api.func/.vc-config.json` — `handler: "index.default"` +
+  `launcherType: Nodejs`, lo que hace que Vercel envuelva el app Express como
+  función serverless.
+- `config.json` — `version: 3`, con `handle: filesystem` (sirve estáticos
+  primero) y `{ "src": "/api/(.*)", "dest": "/api" }`, que envía todas las
+  rutas `/api/*` a la función. Vercel conserva la ruta original, así el app
+  Express interno (rutas `/api/v1/*`) matchea directamente.
 
 - `src/app.ts` construye el container y expone el app (`export default app`).
 - `src/server.ts` usa el mismo app con `app.listen` (dev local: `npm run dev`).
-- `vercel.json`: `framework: null`, `buildCommand: npm run build:vercel`, sirve
-  `dist/index.cjs` con `@vercel/node` y `routes` catch-all (`/(.*)`). Así el
-  app Express interno (rutas `/api/v1/*`) recibe la ruta original sin doble
-  prefijo.
+- `vercel.json`: `framework: null`, `buildCommand: npm run build:vercel` y
+  `outputDirectory: .vercel/output` (necesario para que Vercel descubra el
+  build output). `.vercel/output/` está en `.gitignore` (se genera en build).
+
+> **Por qué Build Output API y no `builds`/`routes` de `vercel.json`:** el `src`
+> de un `build` se evalúa contra el snapshot del repo ANTES de correr el build,
+> así que un bundle gitignored (`dist/`) nunca registraba la función (el error
+> que devolvía 404 en todas las rutas). El Build Output API registra la función
+> DESPUÉS del `buildCommand`, escaneando `.vercel/output/functions/**`, lo que
+> evita esa carrera y no exige commitear el bundle.
 
 ### Desplegar
 
@@ -242,7 +260,14 @@ Se configuran en **Vercel → Project → Settings → Environment Variables**
 | `SESSION_TTL` | `604800` (7 días) |
 | `DEMO_MODE` | `true` (para sembrar usuarios demo) |
 | `NODE_ENV` | `production` (cookie `Secure`) |
-| `CORS_ORIGIN` | el origen del frontend, ej. `https://icruzdaniel.github.io` |
+| `CORS_ORIGIN` | el origen del frontend, ej. `https://icruzdaniel.github.io` (**no** la URL de la API en vercel.app) |
+
+El CORS lo resuelve el middleware `cors` del propio Express (montado en
+`container.ts`): responde `Access-Control-Allow-Origin` con el origen exacto y
+`Access-Control-Allow-Credentials: true`, necesario porque el frontend usa
+`credentials: 'include'` (cookie `ff_session`). Configura `CORS_ORIGIN` con el
+**origen que llama** (GitHub Pages), separado por comas si hay varios. Con el
+valor vacío refleja cualquier origen (no apto para producción con credenciales).
 
 Para que la demo tenga datos + usuarios, ejecuta `npm run seed` (con `DEMO_MODE=true`)
 cuando la base Upstash esté vacía.

@@ -6,9 +6,10 @@
  * @application/*) that Vercel's node runtime cannot resolve, so esbuild must
  * bundle the app first. The bundle is emitted into the Build Output API layout
  * (.vercel/output/functions/api.func/) with a .vc-config.json whose
- * `handler: "index"` makes Vercel invoke the bundle's `module.exports` —
- * emitted by esbuild from `export = app` in src/vercel-entry.ts — directly as a
- * (req, res) Node handler. Routing in config.json sends every non-static
+ * `handler: "index.handler"` + `shouldAddHelpers: true` makes Vercel bridge the
+ * Lambda event into real Node req/res and invoke the named `handler` export
+ * (from src/vercel-entry.ts) as a (req, res) function — the supported path for
+ * Express apps. Routing in config.json sends every non-static
  * path to the /api function while still serving static assets (handle:
  * filesystem).
  *
@@ -43,20 +44,21 @@ function writeFunction() {
   fs.mkdirSync(FUNC_DIR, { recursive: true })
   // Copy the CJS bundle into the function directory so it is included in the
   // serverless function payload. Named index.js so the .vc-config.json handler
-  // ("index") resolves to the bundle's `module.exports`, which is the Express
-  // app itself (emitted by esbuild from `export = app`).
+  // ("index.handler") resolves to the named `handler` export (the Express app
+  // wrapper emitted by esbuild from src/vercel-entry.ts).
   fs.copyFileSync(BUNDLE_SOURCE, path.join(FUNC_DIR, HANDLER_FILE))
 
-  // Node.js serverless function config. `handler: "index"` + launcherType Nodejs
-  // makes Vercel invoke the module's export directly as a (req, res) handler.
+  // Node.js serverless function config. `handler: "index.handler"` +
+  // launcherType Nodejs + shouldAddHelpers true bridges the Lambda event into
+  // real Node req/res and invokes the named handler as a (req, res) function.
   fs.writeFileSync(
     path.join(FUNC_DIR, '.vc-config.json'),
     JSON.stringify(
       {
         runtime: 'nodejs20.x',
-        handler: 'index',
+        handler: 'index.handler',
         launcherType: 'Nodejs',
-        shouldAddHelpers: false,
+        shouldAddHelpers: true,
         shouldAddSourcemapSupport: false,
       },
       null,

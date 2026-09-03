@@ -208,9 +208,7 @@ export function buildApplication(repos: ApplicationRepositories): Application {
   }
   app.use(errorHandler)
   app.use((req, res) => {
-    if (process.env['NODE_ENV'] !== 'production') {
-      console.log(`[fast-foody] unmatched ${req.method} ${req.url}`)
-    }
+    console.log(`[fast-foody] unmatched ${req.method} ${req.url}`)
     res.status(404).json({ error: 'NOT_FOUND', message: 'Route not found' })
   })
 

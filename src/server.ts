@@ -1,8 +1,6 @@
 import { config } from './infrastructure/config/env'
-import { createContainer } from './infrastructure/container/container'
+import { app } from './app'
 import { disconnectDatabase } from './infrastructure/config/db'
-
-const { app } = createContainer()
 
 const server = app.listen(config.port, () => {
   console.log(`Fast Foodiy API running on port ${config.port}`)

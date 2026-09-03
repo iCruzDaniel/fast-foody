@@ -200,6 +200,58 @@ El middleware `cors` (montado en `container.ts`) emite
 exacto; con `CORS_ORIGIN` vacío refleja cualquier origen (útil en dev con
 proxy misma-parte; no lo uses así en producción con credenciales).
 
+## Despliegue del backend en Vercel
+
+El backend Express se empaqueta para Vercel (serverless) con `esbuild`
+(`vercel.json` + `npm run build:vercel`). El frontend **no** se despliega aquí
+(va a GitHub Pages, ver sección anterior).
+
+### Cómo funciona el build
+
+`build:vercel` bundlea `src/app.ts` (que exporta el handler Express como
+`export default app`) a `dist/index.cjs`, **resolviendo los aliases
+`@domain/*`, `@shared/*` y `@application/*`** que el `tsc` no reescribe en el
+output. `@prisma/client` queda **external** (lo instala Vercel vía
+`node_modules`; solo se invoca si eliges el driver `postgres`).
+
+- `src/app.ts` construye el container y expone el app (`export default app`).
+- `src/server.ts` usa el mismo app con `app.listen` (dev local: `npm run dev`).
+- `vercel.json`: `framework: null`, `buildCommand: npm run build:vercel`, sirve
+  `dist/index.cjs` con `@vercel/node` y `routes` catch-all (`/(.*)`). Así el
+  app Express interno (rutas `/api/v1/*`) recibe la ruta original sin doble
+  prefijo.
+
+### Desplegar
+
+```bash
+vercel        # liga el proyecto y genera preview
+vercel --prod # despliega producción
+```
+
+### Variables de entorno en Vercel
+
+Se configuran en **Vercel → Project → Settings → Environment Variables**
+(Production). Mínimas para el driver `upstash`:
+
+| Variable | Valor |
+|----------|-------|
+| `PERSISTENCE_DRIVER` | `upstash` |
+| `UPSTASH_REDIS_REST_URL` | tu URL REST de Upstash |
+| `UPSTASH_REDIS_REST_TOKEN` | tu token REST de Upstash |
+| `SESSION_SECRET` | valor fuerte (`openssl rand -hex 32`) |
+| `SESSION_TTL` | `604800` (7 días) |
+| `DEMO_MODE` | `true` (para sembrar usuarios demo) |
+| `NODE_ENV` | `production` (cookie `Secure`) |
+| `CORS_ORIGIN` | el origen del frontend, ej. `https://icruzdaniel.github.io` |
+
+Para que la demo tenga datos + usuarios, ejecuta `npm run seed` (con `DEMO_MODE=true`)
+cuando la base Upstash esté vacía.
+
+> **Nota:** las prerenderizaciones de Vercel y los "cold starts" son normales en
+> serverless. Si usas el driver `postgres`, Prisma necesita `prisma migrate
+> deploy` y un pool para serverless; el driver recomendado para este deploy es
+> `upstash`.
+
 ## Comandos
 
 | Acción | Comando |

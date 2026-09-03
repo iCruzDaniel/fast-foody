@@ -11,4 +11,11 @@ export const config = {
   sessionTtlSeconds: parseInt(process.env['SESSION_TTL'] ?? '604800', 10),
   demoMode: process.env['DEMO_MODE'] === 'true',
   production: process.env['NODE_ENV'] === 'production',
+  // Comma-separated list of allowed cross-origin frontends for credentialed
+  // requests. Empty string mirrors the incoming Origin (dev/same-host proxy).
+  corsOrigins: (process.env['CORS_ORIGIN'] ?? '')
+    .split(',')
+    .map((o) => o.trim())
+    .filter((o) => o.length > 0)
+    .filter((o) => o !== '*'),
 }

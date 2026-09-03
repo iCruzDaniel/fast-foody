@@ -1,5 +1,6 @@
 import express from 'express'
 import cookieParser from 'cookie-parser'
+import cors from 'cors'
 import { config } from '../config/env'
 import { Redis } from '@upstash/redis'
 
@@ -207,6 +208,22 @@ export function createContainer(): Container {
   const app = express()
   app.use(express.json())
   app.use(cookieParser())
+  app.use(
+    cors({
+      origin(origin, cb) {
+        if (!origin || config.corsOrigins.length === 0) {
+          cb(null, true)
+          return
+        }
+        if (config.corsOrigins.includes(origin)) {
+          cb(null, origin)
+          return
+        }
+        cb(new Error(`Origin ${origin} not allowed by CORS`))
+      },
+      credentials: true,
+    })
+  )
 
   app.use('/api/v1/products', createProductRoutes(productController))
   app.use('/api/v1/orders', createOrderRoutes(orderController))

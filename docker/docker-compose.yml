@@ -32,5 +32,21 @@ services:
     volumes:
       - pgdata:/var/lib/postgresql/data
 
+  # Local Redis. Note: the "upstash" persistence driver talks REST only
+  # (UPSTASH_REDIS_REST_URL/TOKEN pointing at Upstash cloud), so this plain
+  # Redis is for local tools that use a TCP client, not the upstash driver.
+  redis:
+    image: redis:7-alpine
+    ports:
+      - '6379:6379'
+    healthcheck:
+      test: ['CMD', 'redis-cli', 'ping']
+      interval: 2s
+      timeout: 5s
+      retries: 10
+    volumes:
+      - redisdata:/data
+
 volumes:
   pgdata:
+  redisdata:

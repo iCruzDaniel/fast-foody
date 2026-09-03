@@ -1,5 +1,7 @@
 import express from 'express'
+import cookieParser from 'cookie-parser'
 import { config } from '../config/env'
+import { Redis } from '@upstash/redis'
 
 // InMemory adapters
 import { InMemoryOrderRepository } from '../adapters/out/persistence/in-memory/InMemoryOrderRepository'
@@ -11,6 +13,13 @@ import { ConsoleEventPublisher } from '../adapters/out/events/ConsoleEventPublis
 import { PrismaOrderRepository } from '../adapters/out/persistence/postgres/PrismaOrderRepository'
 import { PrismaProductRepository } from '../adapters/out/persistence/postgres/PrismaProductRepository'
 import { PrismaCustomerRepository } from '../adapters/out/persistence/postgres/PrismaCustomerRepository'
+
+// Upstash adapters
+import { UpstashOrderRepository } from '../adapters/out/persistence/upstash/UpstashOrderRepository'
+import { UpstashProductRepository } from '../adapters/out/persistence/upstash/UpstashProductRepository'
+import { UpstashCustomerRepository } from '../adapters/out/persistence/upstash/UpstashCustomerRepository'
+import { UpstashStaffAccountRepository } from '../adapters/out/persistence/upstash/UpstashStaffAccountRepository'
+import { UpstashCustomerAccountRepository } from '../adapters/out/persistence/upstash/UpstashCustomerAccountRepository'
 
 // Use cases - Product
 import { CreateProductUseCase } from '@application/product/use-cases/CreateProductUseCase'
@@ -27,38 +36,70 @@ import { ConfirmOrderUseCase } from '@application/order/use-cases/ConfirmOrderUs
 import { AdvanceOrderStatusUseCase } from '@application/order/use-cases/AdvanceOrderStatusUseCase'
 import { CancelOrderUseCase } from '@application/order/use-cases/CancelOrderUseCase'
 
+// Use cases - Auth
+import { RegisterCustomerAccountUseCase } from '@application/auth/use-cases/RegisterCustomerAccountUseCase'
+import { LoginCustomerUseCase } from '@application/auth/use-cases/LoginCustomerUseCase'
+import { RegisterStaffUseCase } from '@application/auth/use-cases/RegisterStaffUseCase'
+import { LoginStaffUseCase } from '@application/auth/use-cases/LoginStaffUseCase'
+import { GetCurrentSessionUseCase } from '@application/auth/use-cases/GetCurrentSessionUseCase'
+import { LogoutUseCase } from '@application/auth/use-cases/LogoutUseCase'
+
+// Ports (Auth)
+import type { StaffRepositoryPort } from '@domain/auth/repositories/StaffRepositoryPort'
+import type { CustomerAccountRepositoryPort } from '@domain/auth/repositories/CustomerAccountRepositoryPort'
+
 // Domain services
 import { OrderCompositionService } from '@domain/order'
 
 // Controllers
 import { ProductController } from '../adapters/in/http/controllers/ProductController'
 import { OrderController } from '../adapters/in/http/controllers/OrderController'
+import { AuthController } from '../adapters/in/http/controllers/AuthController'
 
 // Routes
 import { createProductRoutes } from '../adapters/in/http/routes/product.routes'
 import { createOrderRoutes } from '../adapters/in/http/routes/order.routes'
+import { createAuthRoutes } from '../adapters/in/http/routes/auth.routes'
 
 // Middleware
 import { errorHandler } from '../adapters/in/http/middlewares/error.middleware'
 
+// Security
+import { BcryptPasswordHasher } from '../adapters/out/security/PasswordHasher'
+import { JwtSessionService } from '../adapters/out/security/JsonWebTokenSession'
+
 export interface Container {
   app: express.Express
-  orderRepo: InMemoryOrderRepository | PrismaOrderRepository
-  productRepo: InMemoryProductRepository | PrismaProductRepository
-  customerRepo: InMemoryCustomerRepository | PrismaCustomerRepository
+  orderRepo: InMemoryOrderRepository | PrismaOrderRepository | UpstashOrderRepository
+  productRepo: InMemoryProductRepository | PrismaProductRepository | UpstashProductRepository
+  customerRepo: InMemoryCustomerRepository | PrismaCustomerRepository | UpstashCustomerRepository
   eventPublisher: ConsoleEventPublisher
+  authController: AuthController | null
 }
 
 export function createContainer(): Container {
-  // 1. Create adapters based on config
-  let orderRepo: InMemoryOrderRepository | PrismaOrderRepository
-  let productRepo: InMemoryProductRepository | PrismaProductRepository
-  let customerRepo: InMemoryCustomerRepository | PrismaCustomerRepository
+  // 1. Create the Redis client first so both the persistence layer and the
+  //    auth layer can share one connection when the upstash driver is active.
+  const redis =
+    config.persistenceDriver === 'upstash'
+      ? new Redis({
+          url: config.upstashRedisUrl,
+          token: config.upstashRedisToken,
+        })
+      : null
+
+  let orderRepo: InMemoryOrderRepository | PrismaOrderRepository | UpstashOrderRepository
+  let productRepo: InMemoryProductRepository | PrismaProductRepository | UpstashProductRepository
+  let customerRepo: InMemoryCustomerRepository | PrismaCustomerRepository | UpstashCustomerRepository
 
   if (config.persistenceDriver === 'postgres') {
     orderRepo = new PrismaOrderRepository()
     productRepo = new PrismaProductRepository()
     customerRepo = new PrismaCustomerRepository()
+  } else if (redis !== null) {
+    orderRepo = new UpstashOrderRepository(redis)
+    productRepo = new UpstashProductRepository(redis)
+    customerRepo = new UpstashCustomerRepository(redis)
   } else {
     orderRepo = new InMemoryOrderRepository()
     productRepo = new InMemoryProductRepository()
@@ -70,14 +111,76 @@ export function createContainer(): Container {
   // 2. Create domain services
   const orderCompositionService = new OrderCompositionService()
 
-  // 3. Create use cases - Product
+  // 3. Create security adapters
+  const passwordHasher = new BcryptPasswordHasher()
+  const jwtSessionService = new JwtSessionService({
+    secret: config.sessionSecret,
+    ttlSeconds: config.sessionTtlSeconds,
+  })
+
+  // 4. Auth is wired ONLY for the upstash driver (per project decision). For
+  //    memory/postgres the `/api/v1/auth` routes are not mounted.
+  let authController: AuthController | null = null
+  if (redis !== null) {
+    const authStaffRepo: StaffRepositoryPort = new UpstashStaffAccountRepository(redis)
+    const authCustomerAccountRepo: CustomerAccountRepositoryPort =
+      new UpstashCustomerAccountRepository(redis, customerRepo)
+
+    const registerCustomerUC = new RegisterCustomerAccountUseCase(
+      customerRepo,
+      authCustomerAccountRepo,
+      passwordHasher,
+      jwtSessionService
+    )
+    const loginCustomerUC = new LoginCustomerUseCase(
+      authCustomerAccountRepo,
+      passwordHasher,
+      jwtSessionService
+    )
+    const registerStaffUC = new RegisterStaffUseCase(authStaffRepo, passwordHasher)
+    const loginStaffUC = new LoginStaffUseCase(
+      authStaffRepo,
+      passwordHasher,
+      jwtSessionService
+    )
+    const getCurrentSessionUC = new GetCurrentSessionUseCase(
+      authCustomerAccountRepo,
+      authStaffRepo,
+      customerRepo
+    )
+    const logoutUC = new LogoutUseCase()
+
+    authController = new AuthController(
+      registerCustomerUC,
+      loginCustomerUC,
+      loginStaffUC,
+      registerStaffUC,
+      getCurrentSessionUC,
+      logoutUC,
+      jwtSessionService,
+      {
+        sessionTtlSeconds: config.sessionTtlSeconds,
+        production: config.production,
+      }
+    )
+  }
+
+  // 5. Create product use cases + controller
   const createProduct = new CreateProductUseCase(productRepo)
   const listProducts = new ListProductsUseCase(productRepo)
   const getProductById = new GetProductByIdUseCase(productRepo)
   const updateProductPrice = new UpdateProductPriceUseCase(productRepo)
   const toggleProductAvailability = new ToggleProductAvailabilityUseCase(productRepo)
 
-  // 4. Create use cases - Order
+  const productController = new ProductController(
+    createProduct,
+    listProducts,
+    getProductById,
+    updateProductPrice,
+    toggleProductAvailability
+  )
+
+  // 6. Create order use cases + controller
   const createOrder = new CreateOrderUseCase(
     orderRepo,
     productRepo,
@@ -91,15 +194,6 @@ export function createContainer(): Container {
   const advanceOrderStatus = new AdvanceOrderStatusUseCase(orderRepo, eventPublisher)
   const cancelOrder = new CancelOrderUseCase(orderRepo, eventPublisher)
 
-  // 5. Create controllers
-  const productController = new ProductController(
-    createProduct,
-    listProducts,
-    getProductById,
-    updateProductPrice,
-    toggleProductAvailability
-  )
-
   const orderController = new OrderController(
     createOrder,
     listOrders,
@@ -109,12 +203,24 @@ export function createContainer(): Container {
     cancelOrder
   )
 
-  // 6. Create Express app
+  // 7. Create Express app
   const app = express()
   app.use(express.json())
+  app.use(cookieParser())
+
   app.use('/api/v1/products', createProductRoutes(productController))
   app.use('/api/v1/orders', createOrderRoutes(orderController))
+  if (authController !== null) {
+    app.use('/api/v1/auth', createAuthRoutes(authController, jwtSessionService))
+  }
   app.use(errorHandler)
 
-  return { app, orderRepo, productRepo, customerRepo, eventPublisher }
+  return {
+    app,
+    orderRepo,
+    productRepo,
+    customerRepo,
+    eventPublisher,
+    authController,
+  }
 }

@@ -151,6 +151,55 @@ npm install
 npm run dev            # Vite proxya /api/v1 -> localhost:3000
 ```
 
+## Despliegue del frontend en GitHub Pages
+
+Un workflow (`.github/workflows/deploy-gh-pages.yml`) compila el frontend y lo
+publica en GitHub Pages automáticamente con cada `push` a `main` (o manual).
+
+```bash
+git push origin main
+```
+
+### Dónde van `VITE_API_URL` y `VITE_DEMO_MODE`
+
+**No se leen del `.env` local** — las variables `VITE_*` se incrustan en los
+estáticos **en tiempo de build** (`import.meta.env` no existe en runtime). El
+workflow las lee de **repository Variables**:
+
+`Settings → Secrets and variables → Actions → Variables`:
+
+| Variable | Ejemplo para producción | Notas |
+|----------|--------------------------|-------|
+| `VITE_API_URL` | `https://api.tu-dominio.com` | Apunta al **origen** de tu API desplegada. **No** uses `/api/v1` (GitHub Pages no la proxya; `/api/v1` relativo apuntaría a `github.io/.../api/v1`, inexistente) |
+| `VITE_DEMO_MODE` | `true` | Debe coincidir con `DEMO_MODE=true` del backend si quieres los autologin demo |
+
+Si una variable queda vacía: `VITE_API_URL` cae a `/api/v1` y `VITE_DEMO_MODE` a `false`.
+
+### Requisitos del side del Pages
+
+1. En **Settings → Pages**, elige *Source → **GitHub Actions*** (no `Deploy from a branch`).
+2. El sitio se publica bajo `https://<usuario>.github.io/<repo>/` (p. ej.
+   `https://icruzdaniel.github.io/fast-foody/`). El workflow usa ese subpath como
+   `--base` automáticamente, y el router (`BrowserRouter basename`) y los assets
+   quedan alineados con él. El SPA se soporta con un `404.html` = `index.html`
+   (GitHub Pages no reescribe rutas).
+
+### CORS del backend (cross-origin)
+
+Como el frontend usa `fetch` con `credentials: 'include'` (cookie `ff_session`)
+y en producción la API vive en un **origen distinto** al de Pages, el backend
+debe permitir ese origen. Configura `CORS_ORIGIN` en el entorno de la API
+(separado por comas):
+
+```bash
+CORS_ORIGIN=https://icruzdaniel.github.io NODE_ENV=production npm run dev
+```
+
+El middleware `cors` (montado en `container.ts`) emite
+`Access-Control-Allow-Credentials: true` y el `Access-Control-Allow-Origin`
+exacto; con `CORS_ORIGIN` vacío refleja cualquier origen (útil en dev con
+proxy misma-parte; no lo uses así en producción con credenciales).
+
 ## Comandos
 
 | Acción | Comando |
